@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.billionaire.backend.domain.acc.mappers.AccMapper">
+    <resultMap id="AccMstMap" type="AccMst">
+        <result property="accNo" column="acc_no"/>
+        <result property="userNo" column="user_no"/>
+        <result property="accName" column="acc_name"/>
+        <result property="accIssuer" column="acc_issuer"/>
+        <result property="accCurrency" column="acc_currency"/>
+        <result property="accBgColorHex" column="acc_bg_color_hex"/>
+        <result property="accIconUrl" column="acc_icon_url"/>
+    </resultMap>
+
+    <select id="selectAccountWithAccNo" parameterType="AccMst" resultType="AccMst">
+        SELECT
+            ACC_NO,
+            USER_NO,
+            ACC_NAME,
+            ACC_ISSUER,
+            ACC_CURRENCY,
+            ACC_BG_COLOR_HEX,
+            ACC_ICON_URL,
+            CREATED_BY,
+            CREATED_AT,
+            MODIFIED_BY,
+            MODIFIED_AT
+        FROM ACC_MST
+        WHERE ACC_NO = #{accNo}
+    </select>
+
+    <update id="updateAccountWithAccNo" parameterType="AccMst">
+        UPDATE ACC_MST
+        SET
+            <if test="accName != null and accName != ''"> ACC_NAME = #{accName}, </if>
+            <if test="accIssuer != null and accIssuer != ''"> ACC_ISSUER = #{accIssuer}, </if>
+            <if test="accCurrency != null and accCurrency != ''"> ACC_CURRENCY = #{accCurrency}, </if>
+            <if test="accBgColorHex != null and accBgColorHex != ''"> ACC_BG_COLOR_HEX = #{accBgColorHex}, </if>
+            <if test="accIconUrl != null and accIconUrl != ''"> ACC_ICON_URL = #{accIconUrl}, </if>
+            MODIFIED_AT = SYSDATE,
+            MODIFIED_BY = #{modifiedBy}
+        WHERE ACC_NO = #{accNo}
+    </update>
+</mapper>

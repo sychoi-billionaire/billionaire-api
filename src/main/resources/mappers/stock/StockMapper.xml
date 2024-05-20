@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.billionaire.backend.domain.stock.mappers.StockMapper">
+    <select id="selectStockMstWithTicker" parameterType="StockMst" resultType="StockMst">
+        SELECT
+              TICKER
+            , KIS_CD
+            , EXCH_CD
+            , STOCK_NAME_KOR
+            , STOCK_NAME_ENG
+            , STOCK_CURRENCY
+            , ASSET_CLASS_CD
+            , ASSET_CLASS_NAME
+            , ASSET_COUNTRY_CD
+            , ASSET_COUNTRY_NAME
+            , STOCK_BG_COLOR_HEX
+            , STOCK_ICON_URL
+            , SEC_TYPE_CD
+            , LAST_TRADE_TIMESTAMP AS TRADE_TIMESTAMP
+            , LAST_VOLUME AS VOLUME
+            , LAST_PRICE AS PRICE
+            , (SELECT cm.LAST_PRICE FROM CURRENCY_MST cm WHERE cm.CODE = 'KRWUSD') AS KRW_USD
+        FROM STOCK_MST
+        WHERE TICKER = #{ticker}
+    </select>
+
+    <update id="updateStockMst" parameterType="StockMst">
+        UPDATE STOCK_MST
+        SET
+            <if test="stockNameKor != null and stockNameKor != ''"> STOCK_NAME_KOR = #{stockNameKor}, </if>
+            <if test="stockNameEng != null and stockNameEng != ''">  STOCK_NAME_ENG = #{stockNameEng}, </if>
+            <if test="stockCurrency != null and stockCurrency != ''"> STOCK_CURRENCY = #{stockCurrency}, </if>
+            <if test="assetClassCd != null and assetClassCd != ''">
+                ASSET_CLASS_CD = #{assetClassCd},
+                ASSET_CLASS_NAME = FN_GET_CODE_NAME('ASSET_CLASS_CD', #{assetClassCd}),
+            </if>
+            <if test="assetCountryCd != null and assetCountryCd != ''">
+                ASSET_COUNTRY_CD = #{assetCountryCd},
+                ASSET_COUNTRY_NAME = FN_GET_CODE_NAME('ASSET_COUNTRY_CD', #{assetCountryCd}),
+            </if>
+            <if test="stockBgColorHex != null and stockBgColorHex != ''"> STOCK_BG_COLOR_HEX = #{stockBgColorHex}, </if>
+            <if test="stockIconUrl != null and stockIconUrl != ''">  STOCK_ICON_URL = #{stockIconUrl}, </if>
+            <if test="secTypeCd != null and secTypeCd != ''"> SEC_TYPE_CD = #{secTypeCd}, </if>
+            MODIFIED_AT = SYSDATE,
+            MODIFIED_BY = #{modifiedBy}
+        WHERE TICKER = #{ticker}
+    </update>
+
+
+    <select id="searchStocksByKeyword" parameterType="StockSearchDto" resultType="StockMst">
+        SELECT
+            TICKER,
+            KIS_CD,
+            EXCH_CD,
+            STOCK_NAME_KOR,
+            STOCK_NAME_ENG,
+            STOCK_CURRENCY,
+            ASSET_CLASS_CD,
+            ASSET_CLASS_NAME,
+            ASSET_COUNTRY_CD,
+            ASSET_COUNTRY_NAME,
+            STOCK_BG_COLOR_HEX,
+            STOCK_ICON_URL,
+            SEC_TYPE_CD,
+            LAST_TRADE_TIMESTAMP AS TRADE_TIMESTAMP,
+            LAST_VOLUME AS VOLUME,
+            LAST_PRICE AS PRICE,
+            CASE
+                WHEN TICKER = #{keyword} OR STOCK_NAME_KOR = #{keyword} OR STOCK_NAME_ENG = #{keyword} THEN 1
+                ELSE 0
+            END AS MATCH_SCORE,
+            (SELECT cm.LAST_PRICE FROM CURRENCY_MST cm WHERE cm.CODE = 'KRWUSD') AS KRWUSD
+        FROM STOCK_MST
+        WHERE TICKER LIKE #{keyword} || '%'
+               OR STOCK_NAME_KOR LIKE '%' || #{keyword} || '%'
+               OR UPPER(STOCK_NAME_ENG) LIKE '%' || #{keyword} || '%'
+        ORDER BY MATCH_SCORE DESC, VOLUME DESC
+        FETCH FIRST 30 ROWS ONLY
+    </select>
+
+
+    <select id="searchStocksByTickers" parameterType="List" resultType="StockMst">
+        SELECT
+            TICKER,
+            KIS_CD,
+            EXCH_CD,
+            STOCK_NAME_KOR,
+            STOCK_NAME_ENG,
+            STOCK_CURRENCY,
+            ASSET_CLASS_CD,
+            ASSET_CLASS_NAME,
+            ASSET_COUNTRY_CD,
+            ASSET_COUNTRY_NAME,
+            STOCK_BG_COLOR_HEX,
+            STOCK_ICON_URL,
+            SEC_TYPE_CD,
+            LAST_TRADE_TIMESTAMP AS TRADE_TIMESTAMP,
+            LAST_PRICE AS PRICE,
+            LAST_VOLUME AS VOLUME,
+            (SELECT cm.LAST_PRICE FROM CURRENCY_MST cm WHERE cm.CODE = 'KRWUSD') AS KRWUSD
+        FROM STOCK_MST
+        WHERE TICKER IN <foreach collection="tickers" item="ticker" index="index" open="(" close=")" separator=", ">
+                            #{ticker}
+                        </foreach>
+    </select>
+
+</mapper>

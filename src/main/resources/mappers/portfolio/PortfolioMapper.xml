@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.billionaire.backend.domain.portfolio.mappers.PortfolioMapper">
+
+    <select id="selectManyPortfolioMst" parameterType="PortfolioMst" resultType="PortfolioMst">
+        SELECT
+            pm.PORTFOLIO_NO,
+            pm.USER_NO,
+            pm.PORTFOLIO_NAME,
+            pm.BASE_DATE,
+            pm.PLAN_YN
+        FROM PORTFOLIO_MST pm
+        WHERE pm.USER_NO = #{userNo}
+        <if test="planYn != null">
+            AND pm.PLAN_YN = #{planYn}
+        </if>
+    </select>
+    <select id="selectOnePortfolioMst" parameterType="PortfolioMst" resultMap="PortfolioMstMap">
+        SELECT
+            pm.PORTFOLIO_NO,
+            pm.USER_NO,
+            pm.PORTFOLIO_NAME,
+            pm.BASE_DATE,
+            pm.PLAN_YN,
+            pdtl.BUDGET_AMOUNT,
+            acc.ACC_NO,
+            acc.ACC_NAME,
+            acc.ACC_ISSUER,
+            acc.ACC_CURRENCY,
+            acc.ACC_BG_COLOR_HEX,
+            acc.ACC_ICON_URL,
+            apd.QUANTITY,
+            stk.KIS_CD,
+            stk.TICKER,
+            stk.EXCH_CD,
+            stk.STOCK_NAME_KOR,
+            stk.STOCK_NAME_ENG,
+            stk.STOCK_CURRENCY,
+            stk.ASSET_CLASS_CD,
+            stk.ASSET_CLASS_NAME,
+            stk.ASSET_COUNTRY_CD,
+            stk.ASSET_COUNTRY_NAME,
+            stk.SEC_TYPE_CD,
+            stk.STOCK_BG_COLOR_HEX,
+            stk.STOCK_ICON_URL,
+            stk.LAST_TRADE_TIMESTAMP AS TRADE_TIMESTAMP,
+            stk.LAST_PRICE AS PRICE,
+            stk.LAST_VOLUME AS VOLUME,
+            (SELECT cm.LAST_PRICE FROM CURRENCY_MST cm WHERE cm.CODE = 'KRWUSD') AS KRW_USD
+        FROM PORTFOLIO_MST pm
+                 LEFT JOIN PORTFOLIO_ACC_DTL pdtl ON pm.PORTFOLIO_NO = pdtl.PORTFOLIO_NO
+                 LEFT JOIN ACC_MST acc ON pdtl.ACC_NO = acc.ACC_NO
+                 LEFT JOIN PORTFOLIO_ASSET_DTL apd ON pdtl.PORTFOLIO_NO = apd.PORTFOLIO_NO AND pdtl.ACC_NO = apd.ACC_NO
+                 LEFT JOIN STOCK_MST stk ON apd.TICKER = stk.TICKER
+        WHERE pm.PORTFOLIO_NO = #{portfolioNo}
+    </select>
+
+    <resultMap id="PortfolioMstMap" type="PortfolioMst">
+        <result property="portfolioNo" column="portfolio_no"/>
+        <result property="userNo" column="user_no"/>
+        <result property="portfolioName" column="portfolio_name"/>
+        <result property="baseDate" column="base_date"/>
+        <result property="planYn" column="plan_yn"/>
+        <collection property="accounts" ofType="PortfolioAccDtl" notNullColumn="acc_no"
+            resultMap="PortfolioAccDtlMap"/>
+    </resultMap>
+
+    <resultMap id="PortfolioAccDtlMap" type="PortfolioAccDtl">
+        <result property="accNo" column="acc_no"/>
+        <result property="budgetAmount" column="budget_amount"/>
+        <result property="accNo" column="acc_no"/>
+        <result property="userNo" column="user_no"/>
+        <result property="accName" column="acc_name"/>
+        <result property="accIssuer" column="acc_issuer"/>
+        <result property="accCurrency" column="acc_currency"/>
+        <result property="accBgColorHex" column="acc_bg_color_hex"/>
+        <result property="accIconUrl" column="acc_icon_url"/>
+        <collection property="stocks" ofType="PortfolioAssetDtl"
+                    resultMap="PortfolioAssetDtlMap" notNullColumn="ticker"/>
+    </resultMap>
+
+    <resultMap id="PortfolioAssetDtlMap" type="PortfolioAssetDtl">
+        <result property="quantity" column="quantity"/>
+        <result property="kisCd" column="kis_cd"/>
+        <result property="ticker" column="ticker"/>
+        <result property="exchCd" column="exch_cd"/>
+        <result property="stockNameKor" column="stock_name_kor"/>
+        <result property="stockNameEng" column="stock_name_eng"/>
+        <result property="stockCurrency" column="stock_currency"/>
+        <result property="assetClassCd" column="asset_class_cd"/>
+        <result property="assetClassName" column="asset_class_name"/>
+        <result property="assetCountryCd" column="asset_country_cd"/>
+        <result property="assetCountryName" column="asset_country_name"/>
+        <result property="secTypeCd" column="sec_type_cd"/>
+        <result property="stockBgColorHex" column="stock_bg_color_hex"/>
+        <result property="stockIconUrl" column="stock_icon_url"/>
+        <result property="tradeTimestamp" column="trade_timestamp"/>
+        <result property="price" column="price"/>
+        <result property="volume" column="volume"/>
+        <result property="krwUsd" column="krw_usd"/>
+    </resultMap>
+
+    <update id="updatePortfolioAccDtl" parameterType="PortfolioAccDtl">
+        UPDATE PORTFOLIO_ACC_DTL
+           SET BUDGET_AMOUNT = #{budgetAmount},
+               MODIFIED_AT = SYSDATE,
+               MODIFIED_BY = #{modifiedBy}
+         WHERE PORTFOLIO_NO = #{portfolioNo}
+           AND ACC_NO = #{accNo}
+    </update>
+
+    <select id="selectOnePortfolioAccDtl" parameterType="PortfolioAccDtl">
+        SELECT
+            pad.PORTFOLIO_NO,
+            pad.ACC_NO,
+            pad.BUDGET_AMOUNT,
+            acc.USER_NO,
+            acc.ACC_NAME,
+            acc.ACC_ISSUER,
+            acc.ACC_CURRENCY,
+            acc.ACC_BG_COLOR_HEX,
+            acc.ACC_ICON_URL
+        FROM PORTFOLIO_ACC_DTL pad
+                 JOIN ACC_MST acc ON acc.ACC_NO = pad.ACC_NO
+        WHERE pad.PORTFOLIO_NO = #{portfolioNo}
+          AND pad.ACC_NO = #{accNo}
+    </select>
+
+    <update id="updatePortfolioAssetDtl" parameterType="PortfolioAssetDtl">
+        UPDATE PORTFOLIO_ASSET_DTL
+        SET QUANTITY = #{quantity},
+            MODIFIED_AT = SYSDATE,
+            MODIFIED_BY = #{modifiedBy}
+        WHERE PORTFOLIO_NO = #{portfolioNo}
+          AND ACC_NO = #{accNo}
+          AND TICKER = #{ticker}
+    </update>
+
+    <insert id="insertPortfolioAssetDtl" parameterType="PortfolioAssetDtl">
+        INSERT INTO PORTFOLIO_ASSET_DTL
+        (
+            PORTFOLIO_NO,
+            ACC_NO,
+            TICKER,
+            QUANTITY,
+            CREATED_AT,
+            CREATED_BY,
+            MODIFIED_AT,
+            MODIFIED_BY
+        )
+        VALUES
+        (
+            #{portfolioNo},
+            #{accNo},
+            #{ticker},
+            #{quantity},
+            SYSDATE,
+            #{createdBy},
+            SYSDATE,
+            #{modifiedBy}
+        )
+    </insert>
+
+    <select id="selectPortfolioAssetDtl" parameterType="PortfolioAssetDtl" resultType="PortfolioAssetDtl">
+        SELECT
+            PORTFOLIO_NO,
+            ACC_NO,
+            TICKER,
+            QUANTITY
+        FROM PORTFOLIO_ASSET_DTL
+        WHERE PORTFOLIO_NO = #{portfolioNo}
+          AND ACC_NO = #{accNo}
+          AND TICKER = #{ticker}
+    </select>
+
+    <select id="selectStockPricesForPortfolioMst" parameterType="long" resultType="StockPrcDtl">
+        SELECT spd.TICKER, spd.TRADE_TIMESTAMP, spd.PRICE, spd.VOLUME
+        FROM STOCK_PRC_DTL spd
+        JOIN (
+                SELECT a.TICKER, MAX(s.TRADE_TIMESTAMP) as TRADE_TIMESTAMP
+                FROM PORTFOLIO_ASSET_DTL a
+                JOIN STOCK_PRC_DTL s ON a.TICKER = s.TICKER
+                WHERE PORTFOLIO_NO = #{portfolioNo}
+                GROUP BY a.TICKER
+        ) sub
+        ON spd.TICKER = sub.TICKER
+        WHERE spd.TRADE_TIMESTAMP = sub.TRADE_TIMESTAMP
+    </select>
+
+    <delete id="deleteManyPortfolioAssetDtl" parameterType="PortfolioSearchDto">
+        DELETE FROM PORTFOLIO_ASSET_DTL
+         WHERE PORTFOLIO_NO = #{portfolioNo} AND ACC_NO = #{accNo}
+           AND TICKER IN <foreach collection="tickers" item="ticker" index="index" open="(" close=")" separator=", ">
+                           #{ticker}
+                         </foreach>
+    </delete>
+</mapper>

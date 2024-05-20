@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.billionaire.backend.domain.currency.mappers.CurrencyMapper">
+
+    <select id="selectCurrencyMst" parameterType="CurrencyMst" resultType="CurrencyMst">
+        SELECT
+            CODE,
+            CURRENCY_CODE,
+            CURRENCY_NAME,
+            COUNTRY,
+            LAST_PRICE,
+            RECORDED_AT,
+            CURRENCY_UNIT
+        FROM CURRENCY_MST
+        WHERE CODE = #{code}
+    </select>
+</mapper>
